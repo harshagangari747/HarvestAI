@@ -43,7 +43,7 @@ HarvestAI is a precision agriculture SaaS platform that:
 
 ## Architecture
 
-![HarvestAI System Architecture](./docs/architecture-diagram.png)
+![HarvestAI System Architecture](./docs/HarvestAIArchDiagram.png)
 
 The system integrates multiple data sources through AWS Lambda functions, DynamoDB for persistent storage, and Claude AI for intelligent recommendations. External APIs (EarthSearch STAC, Open-Meteo, OpenET) feed data into the daily batch processor, which computes metrics and stores results in DynamoDB for retrieval via the frontend.
 
