@@ -1,0 +1,61 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  detect-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run truffleHog to detect secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  lint-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint CloudFormation YAML
+        uses: aws-actions/cloudformation-linter-action@v2
+        with:
+          args: infrastructure/
+
+      - name: Validate Python with pylint
+        run: |
+          pip install pylint
+          pylint backend/lambda_functions/ --disable=all --enable=E,F || true
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Check Python dependencies for vulnerabilities
+        run: |
+          pip install safety
+          safety check --file backend/requirements.txt --json || true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Check Node dependencies
+        run: |
+          cd frontend && npm audit --audit-level=moderate || true
