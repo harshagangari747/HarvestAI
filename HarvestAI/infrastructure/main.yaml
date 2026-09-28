@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HarvestAI MVP - Main Stack Orchestrator'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEPLOY ORDER:
+#   1.  secrets stack  (infrastructure/secrets.yaml)   ← run scripts/setup_secrets.sh
+#   2.  this stack     (infrastructure/main.yaml)
+#
+# The SecretsARN output from step 1 is the APIKeySecretsArn parameter here.
+# ─────────────────────────────────────────────────────────────────────────────
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment
+
+  ProjectName:
+    Type: String
+    Default: harvestai
+    Description: Project name prefix for all resource names
+
+  APIKeySecretsArn:
+    Type: String
+    Description: >
+      ARN of the Secrets Manager secret created by the secrets stack.
+      Run scripts/setup_secrets.sh to create it, then pass the printed ARN here.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Environment"
+        Parameters: [Environment, ProjectName]
+      - Label:
+          default: "Secrets (deploy secrets.yaml first)"
+        Parameters: [APIKeySecretsArn]
+
+Resources:
+  # ── S3 bucket for nested stack templates ──────────────────────────────────
+  TemplatesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-cfn-templates-${AWS::AccountId}-${Environment}'
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ── Database stack ─────────────────────────────────────────────────────────
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucket}.s3.${AWS::Region}.amazonaws.com/database.yaml'
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName:  !Ref ProjectName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ── Lambda + IAM stack ─────────────────────────────────────────────────────
+  LambdaStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: DatabaseStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucket}.s3.${AWS::Region}.amazonaws.com/lambda.yaml'
+      Parameters:
+        Environment:             !Ref Environment
+        ProjectName:             !Ref ProjectName
+        FieldsTableName:         !GetAtt DatabaseStack.Outputs.FieldsTableName
+        ObservationsTableName:   !GetAtt DatabaseStack.Outputs.ObservationsTableName
+        DailyStatusTableName:    !GetAtt DatabaseStack.Outputs.DailyStatusTableName
+        WeatherHistoryTableName: !GetAtt DatabaseStack.Outputs.WeatherHistoryTableName
+        ETHistoryTableName:      !GetAtt DatabaseStack.Outputs.ETHistoryTableName
+        BatchLogTableName:       !GetAtt DatabaseStack.Outputs.BatchJobLogTableName
+        APIKeySecretsArn:        !Ref APIKeySecretsArn
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ── API Gateway + EventBridge stack ───────────────────────────────────────
+  APIStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: LambdaStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucket}.s3.${AWS::Region}.amazonaws.com/networking.yaml'
+      Parameters:
+        Environment:                !Ref Environment
+        ProjectName:                !Ref ProjectName
+        FieldOnboardingLambdaArn:   !GetAtt LambdaStack.Outputs.FieldOnboardingLambdaArn
+        DailyBatchLambdaArn:        !GetAtt LambdaStack.Outputs.DailyBatchLambdaArn
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+Outputs:
+  APIEndpoint:
+    Value: !GetAtt APIStack.Outputs.APIEndpoint
+    Description: Public API Gateway endpoint URL
+    Export:
+      Name: !Sub '${ProjectName}-api-endpoint-${Environment}'
+
+  DataBucketName:
+    Value: !GetAtt LambdaStack.Outputs.DataBucketName
+    Description: S3 bucket for satellite data and previews
+    Export:
+      Name: !Sub '${ProjectName}-data-bucket-${Environment}'
+
+  FieldsTableName:
+    Value: !GetAtt DatabaseStack.Outputs.FieldsTableName
+    Export:
+      Name: !Sub '${ProjectName}-fields-table-${Environment}'
+
+  DailyStatusTableName:
+    Value: !GetAtt DatabaseStack.Outputs.DailyStatusTableName
+    Export:
+      Name: !Sub '${ProjectName}-dailystatus-table-${Environment}'
+
+  DailyBatchLambdaName:
+    Value: !GetAtt LambdaStack.Outputs.DailyBatchLambdaName
+    Export:
+      Name: !Sub '${ProjectName}-batch-lambda-${Environment}'
+
+  TemplatesBucketName:
+    Value: !Ref TemplatesBucket
+    Description: S3 bucket where nested CFN templates are uploaded
+    Export:
+      Name: !Sub '${ProjectName}-templates-bucket-${Environment}'

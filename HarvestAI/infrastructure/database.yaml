@@ -1,0 +1,194 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HarvestAI MVP - DynamoDB Tables'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+
+  ProjectName:
+    Type: String
+    Default: harvestai
+
+Resources:
+  # Fields Table: Core field metadata
+  FieldsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-fields-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fieldId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fieldId
+          KeyType: HASH
+        - AttributeName: userId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserIdIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-fields-${Environment}'
+
+  # Observations Table: Satellite & sensor data per observation event
+  ObservationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-observations-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fieldId
+          AttributeType: S
+        - AttributeName: observationDate
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fieldId
+          KeyType: HASH
+        - AttributeName: observationDate
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: expiresAt
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-observations-${Environment}'
+
+  # Daily Status Table: Aggregated daily metrics & AI brief
+  DailyStatusTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-dailystatus-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fieldId
+          AttributeType: S
+        - AttributeName: statusDate
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fieldId
+          KeyType: HASH
+        - AttributeName: statusDate
+          KeyType: RANGE
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-dailystatus-${Environment}'
+
+  # Weather History Table: Cached weather observations & forecasts
+  WeatherHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-weather-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fieldId
+          AttributeType: S
+        - AttributeName: weatherDate
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fieldId
+          KeyType: HASH
+        - AttributeName: weatherDate
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: expiresAt
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-weather-${Environment}'
+
+  # ET History Table: Cached ET observations
+  ETHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-et-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fieldId
+          AttributeType: S
+        - AttributeName: etDate
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fieldId
+          KeyType: HASH
+        - AttributeName: etDate
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: expiresAt
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-et-${Environment}'
+
+  # Batch Job Log Table: Track daily batch runs
+  BatchJobLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-batchlog-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: batchJobId
+          AttributeType: S
+        - AttributeName: startTime
+          AttributeType: S
+      KeySchema:
+        - AttributeName: batchJobId
+          KeyType: HASH
+        - AttributeName: startTime
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: expiresAt
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-batchlog-${Environment}'
+
+Outputs:
+  FieldsTableName:
+    Value: !Ref FieldsTable
+    Description: Fields table name
+
+  FieldsTableArn:
+    Value: !GetAtt FieldsTable.Arn
+    Description: Fields table ARN
+
+  ObservationsTableName:
+    Value: !Ref ObservationsTable
+    Description: Observations table name
+
+  ObservationsTableArn:
+    Value: !GetAtt ObservationsTable.Arn
+    Description: Observations table ARN
+
+  DailyStatusTableName:
+    Value: !Ref DailyStatusTable
+    Description: Daily status table name
+
+  DailyStatusTableArn:
+    Value: !GetAtt DailyStatusTable.Arn
+    Description: Daily status table ARN
+
+  WeatherHistoryTableName:
+    Value: !Ref WeatherHistoryTable
+    Description: Weather history table name
+
+  ETHistoryTableName:
+    Value: !Ref ETHistoryTable
+    Description: ET history table name
+
+  BatchJobLogTableName:
+    Value: !Ref BatchJobLogTable
+    Description: Batch job log table name
+
+  StackName:
+    Value: !Ref AWS::StackName
+    Description: Stack name

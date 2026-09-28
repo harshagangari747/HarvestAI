@@ -1,0 +1,364 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HarvestAI MVP - API Gateway & Networking'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+
+  ProjectName:
+    Type: String
+    Default: harvestai
+
+  FieldOnboardingLambdaArn:
+    Type: String
+    Description: ARN of the field onboarding Lambda function
+
+  DailyBatchLambdaArn:
+    Type: String
+    Description: ARN of the daily batch Lambda function
+
+Resources:
+  # ── EventBridge IAM Role (defined first — referenced by schedule rule) ─────
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-eventbridge-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeDailyBatchLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub '${DailyBatchLambdaArn}'
+
+  # ── REST API ──────────────────────────────────────────────────────────────
+  HarvestAIAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub '${ProjectName}-api-${Environment}'
+      Description: HarvestAI MVP REST API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ── Lambda invoke permissions ─────────────────────────────────────────────
+  FieldOnboardingInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Sub '${FieldOnboardingLambdaArn}'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HarvestAIAPI}/*'
+
+  DailyBatchInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Sub '${DailyBatchLambdaArn}'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HarvestAIAPI}/*'
+
+  # ── /fields ───────────────────────────────────────────────────────────────
+  FieldsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ParentId: !GetAtt HarvestAIAPI.RootResourceId
+      PathPart: fields
+
+  # POST /fields
+  FieldsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref FieldsResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FieldOnboardingLambdaArn}/invocations'
+
+  # OPTIONS /fields (CORS preflight)
+  FieldsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref FieldsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # ── /fields/{fieldId} ─────────────────────────────────────────────────────
+  FieldIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ParentId: !Ref FieldsResource
+      PathPart: '{fieldId}'
+
+  # GET /fields/{fieldId}
+  GetFieldMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref FieldIdResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FieldOnboardingLambdaArn}/invocations'
+
+  # OPTIONS /fields/{fieldId} (CORS preflight)
+  FieldIdOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref FieldIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # ── /fields/{fieldId}/status ──────────────────────────────────────────────
+  StatusResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ParentId: !Ref FieldIdResource
+      PathPart: status
+
+  # ── /fields/{fieldId}/status/latest ──────────────────────────────────────
+  LatestStatusResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ParentId: !Ref StatusResource
+      PathPart: latest
+
+  # GET /fields/{fieldId}/status/latest
+  GetLatestStatusMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref LatestStatusResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DailyBatchLambdaArn}/invocations'
+
+  # OPTIONS /fields/{fieldId}/status/latest (CORS preflight)
+  LatestStatusOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref LatestStatusResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # ── /fields/{fieldId}/run ─────────────────────────────────────────────────
+  RunResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ParentId: !Ref FieldIdResource
+      PathPart: run
+
+  # POST /fields/{fieldId}/run
+  # Async Lambda invocation: API Gateway returns 202 immediately while the
+  # satellite/ET/Bedrock batch continues in the background.
+  RunBatchMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref RunResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DailyBatchLambdaArn}/invocations'
+        RequestParameters:
+          integration.request.header.X-Amz-Invocation-Type: "'Event'"
+        RequestTemplates:
+          application/json: "{\"pathParameters\":{\"fieldId\":\"$input.params('fieldId')\"},\"triggerType\":\"manual\"}"
+        IntegrationResponses:
+          - StatusCode: '202'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+            ResponseTemplates:
+              application/json: '{"status":"accepted","message":"Batch started asynchronously"}'
+      MethodResponses:
+        - StatusCode: '202'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  # OPTIONS /fields/{fieldId}/run (CORS preflight)
+  RunOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      ResourceId: !Ref RunResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # ── API Deployment ────────────────────────────────────────────────────────
+  APIDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - FieldsPostMethod
+      - FieldsOptionsMethod
+      - GetFieldMethod
+      - GetLatestStatusMethod
+      - RunBatchMethod
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      Description: !Sub 'HarvestAI ${Environment} deployment'
+
+  # ── API Stage ─────────────────────────────────────────────────────────────
+  # Note: MethodSettings with LoggingLevel omitted intentionally —
+  # CloudWatch Logs role ARN must be pre-configured in API Gateway account
+  # settings to enable logging. Not required for MVP.
+  APIStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref HarvestAIAPI
+      DeploymentId: !Ref APIDeployment
+      StageName: !Ref Environment
+      Description: !Sub 'HarvestAI ${Environment} stage'
+
+  # ── EventBridge daily batch schedule ─────────────────────────────────────
+  DailyBatchScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${ProjectName}-daily-batch-${Environment}'
+      Description: Trigger HarvestAI daily batch pipeline at 2 AM UTC
+      ScheduleExpression: 'cron(0 2 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Id: DailyBatchLambdaTarget
+          Arn: !Sub '${DailyBatchLambdaArn}'
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          Input: '{"batchType":"daily","triggerType":"scheduled"}'
+
+  # Allow EventBridge to invoke the batch Lambda
+  DailyBatchEventBridgePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Sub '${DailyBatchLambdaArn}'
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailyBatchScheduleRule.Arn
+
+Outputs:
+  APIEndpoint:
+    Value: !Sub 'https://${HarvestAIAPI}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Description: Public API Gateway endpoint URL
+    Export:
+      Name: !Sub '${ProjectName}-api-endpoint-${Environment}'
+
+  APIId:
+    Value: !Ref HarvestAIAPI
+    Description: API Gateway REST API ID
+
+  APIStage:
+    Value: !Ref APIStage
+    Description: API Gateway stage name
+
+  DailyBatchRuleName:
+    Value: !Ref DailyBatchScheduleRule
+    Description: EventBridge rule name for daily batch
+
+  StackName:
+    Value: !Ref AWS::StackName
+    Description: Stack name

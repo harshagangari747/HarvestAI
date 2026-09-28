@@ -1,0 +1,69 @@
+# Environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/.aws/
+
+# Runtime frontend configuration
+frontend/public/app-config.json
+!frontend/public/app-config.example.json
+
+# AWS SAM
+**/.aws-sam/
+**/samconfig.toml
+!**/samconfig.toml.example
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+
+# Angular / Node
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+**/.cache/
+**/.vite/
+**/.eslintcache
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Generated deployment packages
+*.zip
+*.tar
+*.tar.gz
+
+# Credentials and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE-specific local configuration
+.idea/
+**/.vscode/*
+!**/.vscode/extensions.json
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+EOF

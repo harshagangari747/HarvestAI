@@ -1,0 +1,576 @@
+/* ── Page layout ─────────────────────────────────────────────────────────── */
+.field-setup {
+  max-width: 860px;
+  margin: 2rem auto;
+  padding: 0 1rem 4rem;
+}
+
+.field-setup h1 {
+  text-align: center;
+  color: #2d5016;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+/* ── Form card ────────────────────────────────────────────────────────────── */
+.setup-form {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.form-section {
+  padding: 2rem 2rem 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.form-section h2 {
+  color: #2d5016;
+  font-size: 1.2rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.optional-tag {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #999;
+  background: #f0f0f0;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ── Tooltip ──────────────────────────────────────────────────────────────── */
+.tooltip-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  outline: none;
+}
+
+.tooltip-icon {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #c8ddb0;
+  color: #2d5016;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.tooltip-box {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a2e0a;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.45;
+  padding: 0.55rem 0.8rem;
+  border-radius: 6px;
+  width: 270px;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  white-space: normal;
+}
+
+/* Arrow */
+.tooltip-box::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1a2e0a;
+}
+
+/* ── Field label row ──────────────────────────────────────────────────────── */
+.field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.field-label-row label {
+  color: #333;
+  font-weight: 500;
+  font-size: 0.93rem;
+  line-height: 1.2;
+}
+
+.required-star {
+  color: #c62828;
+}
+
+/* ── Form groups ──────────────────────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 1.4rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  color: #333;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  display: block;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #2d5016;
+  box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.12);
+}
+
+/* Soil test — 2-column grid */
+.soil-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 2rem;
+}
+
+/* ── Boundary tabs ────────────────────────────────────────────────────────── */
+.boundary-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 1.25rem;
+}
+
+.tab-btn {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-btn:hover {
+  color: #2d5016;
+}
+
+.tab-btn.active {
+  color: #2d5016;
+  border-bottom-color: #2d5016;
+}
+
+/* ── Map panel ────────────────────────────────────────────────────────────── */
+.map-instructions {
+  color: #555;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #f5f9f0;
+  border-left: 3px solid #2d5016;
+  border-radius: 0 4px 4px 0;
+}
+
+.leaflet-map-container {
+  width: 100%;
+  height: 380px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* ── Coordinate entry ─────────────────────────────────────────────────────── */
+.coord-entry {
+  padding: 0.25rem 0;
+}
+
+.coord-help {
+  font-size: 0.88rem;
+  color: #555;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.coord-hint {
+  color: #888;
+  font-style: italic;
+}
+
+.coord-table {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.coord-header,
+.coord-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 1fr 36px;
+  align-items: center;
+  gap: 0;
+}
+
+.coord-header {
+  background: #f5f5f5;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 1px solid #ddd;
+}
+
+.coord-row {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.coord-row:last-child {
+  border-bottom: none;
+}
+
+.coord-num {
+  padding: 0 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.coord-row input {
+  border: none;
+  border-right: 1px solid #f0f0f0;
+  border-radius: 0;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.coord-row input:focus {
+  outline: none;
+  background: #f5f9f0;
+  box-shadow: inset 0 0 0 2px #2d5016;
+  z-index: 1;
+  position: relative;
+}
+
+.coord-remove {
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 36px;
+  transition: color 0.2s;
+}
+
+.coord-remove:hover:not(:disabled) {
+  color: #c62828;
+}
+
+.coord-remove:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.coord-error {
+  color: #c62828;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+.coord-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.coord-add-btn {
+  background: transparent;
+  border: 1px solid #2d5016;
+  color: #2d5016;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.coord-add-btn:hover {
+  background: #f0f6ea;
+}
+
+.coord-apply-btn {
+  background: #2d5016;
+  border: none;
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.coord-apply-btn:hover {
+  background: #4a7c28;
+}
+
+/* ── Boundary confirmed badge ─────────────────────────────────────────────── */
+.boundary-confirmed {
+  margin-top: 0.85rem;
+  padding: 0.55rem 1rem;
+  background: #e8f5e1;
+  border: 1px solid #b7d8a0;
+  border-radius: 4px;
+  color: #2d5016;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* ── Error message ────────────────────────────────────────────────────────── */
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 0.85rem 1rem;
+  border-radius: 5px;
+  margin-bottom: 1.25rem;
+  border-left: 4px solid #c62828;
+  font-size: 0.9rem;
+}
+
+/* ── Submit bar ───────────────────────────────────────────────────────────── */
+.form-actions {
+  padding: 1.75rem 2rem;
+  background: #f9f9f9;
+  display: flex;
+  justify-content: center;
+}
+
+.submit-button {
+  background: #2d5016;
+  color: white;
+  padding: 0.85rem 2.5rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #4a7c28;
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .soil-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group input,
+  .form-group select {
+    max-width: 100%;
+  }
+
+  .tooltip-box {
+    width: 210px;
+    left: 0;
+    transform: none;
+  }
+
+  .tooltip-box::after {
+    left: 20px;
+    transform: none;
+  }
+
+  .leaflet-map-container {
+    height: 280px;
+  }
+
+  .form-section {
+    padding: 1.5rem 1rem 1rem;
+  }
+}
+
+/* ── Name input with randomise button ───────────────────────────────────── */
+.name-input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  max-width: 480px;
+}
+
+.name-input-row input {
+  flex: 1;
+  max-width: unset;
+}
+
+.randomise-btn {
+  background: #f0f6ea;
+  border: 1px solid #b0d89a;
+  color: #2d5016;
+  padding: 0.7rem 1rem;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.randomise-btn:hover { background: #d4edba; }
+
+/* ── Map wrapper (search box + map stacked) ─────────────────────────────── */
+.map-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Search box ─────────────────────────────────────────────────────────── */
+.map-search-box {
+  position: relative;
+  z-index: 500;
+  background: white;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+
+.map-search-input-row {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  gap: 0.5rem;
+}
+
+.map-search-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.map-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.92rem;
+  color: #333;
+  background: transparent;
+  min-width: 0;
+}
+
+.map-search-input::placeholder { color: #bbb; }
+
+.map-search-spinner {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.map-search-clear {
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.map-search-clear:hover { color: #555; }
+
+/* Dropdown results */
+.map-search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #f0f0f0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: white;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  position: absolute;
+  left: 0; right: 0; top: 100%;
+  z-index: 1000;
+}
+
+.map-search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f9f9f9;
+  gap: 0.5rem;
+  transition: background 0.1s;
+}
+.map-search-result-item:hover { background: #f5f9f0; }
+.map-search-result-item:last-child { border-bottom: none; }
+
+.map-result-name {
+  font-size: 0.85rem;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-result-type {
+  font-size: 0.72rem;
+  color: #999;
+  background: #f0f0f0;
+  padding: 1px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+/* Map itself sits below the search box, rounded bottom */
+.map-wrapper .leaflet-map-container {
+  border-radius: 0 0 6px 6px;
+  border: 1px solid #ddd;
+  border-top: none;
+}
